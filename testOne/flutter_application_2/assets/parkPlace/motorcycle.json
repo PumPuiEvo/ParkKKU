@@ -1,0 +1,19 @@
+{
+    "placeParking" : [
+        {
+            "placeID" : "EN04",
+            "Latitude" : 16.472119,
+            "Longitude" : 102.825444
+        },
+        {
+            "placeID" : "LanPHO",
+            "Latitude" : 16.472361,
+            "Longitude" : 102.824580
+        },
+        {
+            "placeID" : "50 Year Engineering KKU",
+            "Latitude" : 16.474032,
+            "Longitude" : 102.823235
+        }
+    ]
+}

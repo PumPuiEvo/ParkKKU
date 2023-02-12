@@ -1,0 +1,19 @@
+{
+    "place" : [
+        {
+            "placeID" : "Car zone A",
+            "Latitude" : 16.471208,
+            "Longitude" : 102.824758
+        },
+        {
+            "placeID" : "Car zone C",
+            "Latitude" : 16.471218,
+            "Longitude" : 102.824117
+        },
+        {
+            "placeID" : "Car zone E",
+            "Latitude" : 16.471457,
+            "Longitude" : 102.822973
+        }
+    ]
+}

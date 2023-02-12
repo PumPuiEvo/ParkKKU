@@ -1,0 +1,337 @@
+import 'dart:async';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter/foundation.dart';
+import 'package:flutter/material.dart';
+import 'dart:async';
+import 'dart:convert';
+import 'dart:typed_data';
+import 'dart:ui' as ui;
+import 'package:flutter/rendering.dart';
+import 'package:app01/Atom/CustomizeMarkerICon.dart';
+import 'package:app01/Atom/TestMaker.dart';
+import 'package:flutter/services.dart';
+import 'package:google_maps_flutter/google_maps_flutter.dart';
+import 'package:geolocator/geolocator.dart';
+import 'package:location/location.dart';
+
+class SimpleMaps extends StatefulWidget {
+  const SimpleMaps({super.key});
+
+  @override
+  _MyAppState createState() => _MyAppState();
+}
+
+class _MyAppState extends State<SimpleMaps> {
+  //String googleApikey = "AIzaSyCMBfP4py6zjtDQEUby3HeXWl4jpfv5wTM";// use in android.xml
+  Completer<GoogleMapController> _controller = Completer();
+  static bool gpsON = false;
+  Set<Marker> _markers = {};
+
+  static double currentLocationLatitude = 16.472955;
+  static double currentLocationlongitude = 102.823042;
+  static late Uint8List userProfile;
+  static LatLng _center = LatLng(16.472955, 102.823042);
+
+  static CustomizeMarkerICon currentLocationICon =
+      CustomizeMarkerICon('assets/images/noiPic.png', 100);
+
+  static Widget userImage = const Icon(
+    Icons.person,
+    size: 50,
+    color: Color.fromARGB(255, 117, 117, 117),
+  );
+  static void getProFileImage() async {
+    final auth = FirebaseAuth.instance;
+    try {
+      userImage = CircleAvatar(
+        backgroundImage: NetworkImage(auth.currentUser!.photoURL!),
+      );
+      userProfile =
+          (await NetworkAssetBundle(Uri.parse(auth.currentUser!.photoURL!))
+                  .load(auth.currentUser!.photoURL!))
+              .buffer
+              .asUint8List();
+
+      print(auth.currentUser!.photoURL!);
+    } catch (e) {
+      userProfile = currentLocationICon.getMarkerIConAsBytes();
+      userImage = const Icon(
+        Icons.person,
+        size: 50,
+        color: Color.fromARGB(255, 117, 117, 117),
+      );
+    }
+  }
+
+  void _onMapCreated(GoogleMapController controller) {
+    _controller.complete(controller);
+  }
+
+  MapType _currentMapType = MapType.hybrid;
+  void _onMapTypeButtonPressed() {
+    setState(() {
+      _currentMapType =
+          _currentMapType == MapType.normal ? MapType.hybrid : MapType.normal;
+    });
+  }
+
+  //------------------------------currentLocation part
+  LocationData? currentLocation;
+  void getCurrentLocation() async {
+    Location location = Location();
+    location.getLocation().then(
+      (location) {
+        currentLocation = location;
+      },
+    );
+
+    GoogleMapController googleMapController = await _controller.future;
+    location.onLocationChanged.listen(
+      (newLoc) {
+        currentLocation = newLoc;
+        googleMapController.animateCamera(
+          CameraUpdate.newCameraPosition(
+            CameraPosition(
+              zoom: 13.5,
+              target: LatLng(
+                newLoc.latitude!,
+                newLoc.longitude!,
+              ),
+            ),
+          ),
+        );
+        setState(() {});
+      },
+    );
+  }
+  //---------------------------------
+
+  Future<LocationData?> _currentLocation2() async {
+    bool serviceEnabled;
+    PermissionStatus permissionGranted;
+
+    Location location = new Location();
+
+    serviceEnabled = await location.serviceEnabled();
+    if (!serviceEnabled) {
+      serviceEnabled = await location.requestService();
+      if (!serviceEnabled) {
+        return null;
+      }
+    }
+
+    permissionGranted = await location.hasPermission();
+    if (permissionGranted == PermissionStatus.denied) {
+      permissionGranted = await location.requestPermission();
+      if (permissionGranted != PermissionStatus.granted) {
+        return null;
+      }
+    }
+    return await location.getLocation();
+  }
+
+  // set maker //pin
+  void _onAddMarkerButtonPressed() {
+    setState(() {
+      _markers.add(Marker(
+        // This marker id can be anything that uniquely identifies each marker.
+        markerId: MarkerId(_lastMapPosition.toString()),
+        position: _lastMapPosition, //Position on mark @ChangNoi
+        infoWindow: InfoWindow(
+          title: _lastMapPosition.toString(), //title message on mark @ChangNoi
+          snippet: 'message', //snippet message on mark @ChangNoi
+        ),
+        icon: BitmapDescriptor.defaultMarker,
+      ));
+    });
+  }
+
+  void _AddMarkerCurrentLocation() async {
+    setState(() {
+      _markers.add(Marker(
+        // This marker id can be anything that uniquely identifies each marker.
+        markerId: MarkerId("CurrentLocation"),
+        position: LatLng(currentLocationLatitude, currentLocationlongitude),
+        // ignore: prefer_const_constructors
+        infoWindow: InfoWindow(
+          title: "Your current location", //title message on mark @ChangNoi
+          snippet:
+              "This marker shows your current location.", //snippet message on mark @ChangNoi
+        ),
+        icon: BitmapDescriptor.fromBytes(userProfile),
+        visible: gpsON, // if GPS ON it's viisble
+      ));
+    });
+  }
+
+  //set camera
+  LatLng _lastMapPosition = _center;
+  void _onCameraMove(CameraPosition position) {
+    _lastMapPosition = position.target;
+  }
+
+  // created method for getting user current location
+  Future<Position> getUserCurrentLocation() async {
+    await Geolocator.requestPermission().then((value) {
+      gpsON = true;
+    }).onError((error, stackTrace) async {
+      await Geolocator.requestPermission();
+      ////////////////////////////////////////////////debugprint("ERROR $error");
+      gpsON = false;
+    });
+    return await Geolocator.getCurrentPosition();
+  }
+
+  Future<void> syncLocation() async {
+    getUserCurrentLocation().then((value) async {
+      // ignore: avoid_print
+      ////////////////////////////////////////////////debugprint("${value.latitude} ${value.longitude}");
+      currentLocationLatitude = value.latitude;
+      currentLocationlongitude = value.longitude;
+      //////////////////////////////////////////////debugprint(getProFileImage().toString());
+
+      // specified current users location
+      // ignore: unnecessary_new
+      CameraPosition cameraPosition = new CameraPosition(
+        target: LatLng(value.latitude, value.longitude),
+        zoom: 16,
+      );
+
+      final GoogleMapController controller = await _controller.future;
+      controller.animateCamera(CameraUpdate.newCameraPosition(cameraPosition));
+      setState(() {});
+    });
+  }
+
+  Future<void> animateCameraCurrentLocation() async {
+    /////////////////debugprint("$currentLocationLatitude $currentLocationlongitude");
+    // specified current users location
+    // ignore: unnecessary_new
+    CameraPosition cameraPosition = new CameraPosition(
+      target: LatLng(currentLocationLatitude, currentLocationlongitude),
+      zoom: 16,
+    );
+
+    final GoogleMapController controller = await _controller.future;
+    controller.animateCamera(CameraUpdate.newCameraPosition(cameraPosition));
+    setState(() {});
+  }
+
+  void realTimeLocationTask() async {
+    getUserCurrentLocation().then((value) async {
+      // ignore: avoid_print
+      ///////////////////////debugprint("${value.latitude} ${value.longitude}");
+      getProFileImage();
+      _AddMarkerCurrentLocation();
+      currentLocationLatitude = value.latitude;
+      currentLocationlongitude = value.longitude;
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    realTimeLocationTask();
+    return MaterialApp(
+        home: Scaffold(
+      appBar: AppBar(
+        title: Text('Maps Sample App'),
+        backgroundColor: Colors.green[700],
+      ),
+      body: Stack(
+        children: <Widget>[
+          GoogleMap(
+            onMapCreated: _onMapCreated,
+            zoomGesturesEnabled: true, //zoom in out
+            mapType: _currentMapType,
+            onCameraMove: _onCameraMove,
+            compassEnabled: true,
+            initialCameraPosition: CameraPosition(
+              target: _center,
+              zoom: 15.0,
+            ),
+            myLocationEnabled: false, // current locate button
+            markers: _markers,
+          ),
+          Padding(
+            padding: EdgeInsets.all(16.0),
+            child: Align(
+              alignment: Alignment.topLeft,
+              child: FloatingActionButton(
+                onPressed: _onMapTypeButtonPressed,
+                materialTapTargetSize: MaterialTapTargetSize.padded,
+                backgroundColor: Colors.amber,
+                child: Icon(Icons.map, size: 36.0),
+              ),
+            ),
+          ),
+          Padding(
+            padding: EdgeInsets.all(8.0),
+            child: Align(
+              alignment: Alignment.topRight,
+              child: Column(
+                children: <Widget>[
+                  SizedBox(height: 5),
+                  FloatingActionButton(
+                    onPressed: _onAddMarkerButtonPressed,
+                    materialTapTargetSize: MaterialTapTargetSize.padded,
+                    backgroundColor: Colors.green,
+                    child: Icon(Icons.add_location, size: 36.0),
+                  ),
+                  SizedBox(height: 1.0),
+                  //CurrentLocation
+                  FloatingActionButton(
+                    onPressed: () async {
+                      animateCameraCurrentLocation();
+                    },
+                    child: Icon(Icons.location_on, size: 40),
+                  ),
+                  SizedBox(height: 16.0),
+                  // ignore: prefer_const_constructors
+                  FloatingActionButton(
+                    onPressed: () async {
+                      _markers.clear();
+                      addMakerListToSetCar(_markers);
+                    },
+                    materialTapTargetSize: MaterialTapTargetSize.padded,
+                    backgroundColor: Colors.blue,
+                    child: Icon(Icons.car_rental_outlined, size: 36.0),
+                  ),
+                  SizedBox(height: 1.0),
+                  // ignore: prefer_const_constructors
+                  FloatingActionButton(
+                    onPressed: () async {
+                      _markers.clear();
+                      addMakerListToSetMoto(_markers);
+                    },
+                    materialTapTargetSize: MaterialTapTargetSize.padded,
+                    backgroundColor: Color.fromARGB(255, 18, 1, 0),
+                    child: const Icon(Icons.motorcycle, size: 36.0),
+                  ),
+                  SizedBox(height: 1.0),
+                  // ignore: prefer_const_constructors
+                  FloatingActionButton(
+                    onPressed: () => FirebaseAuth.instance.signOut(),
+                    materialTapTargetSize: MaterialTapTargetSize.padded,
+                    backgroundColor: Color.fromARGB(255, 18, 1, 0),
+                    child: const Icon(Icons.motorcycle, size: 36.0),
+                  ),
+                  SizedBox(height: 1.0),
+                  // ignore: prefer_const_constructors
+                  FloatingActionButton(
+                    onPressed: () {
+                      gpsON = false;
+                      _markers.clear();
+                    },
+                    materialTapTargetSize: MaterialTapTargetSize.padded,
+                    backgroundColor: Colors.blue,
+                    child: Text("off gps icon"),
+                  )
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
+    ));
+  }
+}
