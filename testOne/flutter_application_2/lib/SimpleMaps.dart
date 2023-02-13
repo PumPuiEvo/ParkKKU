@@ -25,8 +25,9 @@ class _MyAppState extends State<SimpleMaps> {
   Set<Marker> _markers = {};
   Set<Polygon> _polygon = {};
 
-  static double currentLocationLatitude = 16.472955;
-  static double currentLocationlongitude = 102.823042;
+  static double currentLatitude = 16.472955;
+  static double currentLongitude = 102.823042;
+  static double radiusMark = 0.0031;
 
   static LatLng _center = LatLng(16.472955, 102.823042);
   LatLng _pinPosition = _center;
@@ -118,12 +119,28 @@ class _MyAppState extends State<SimpleMaps> {
     });
   }
 
+  // marker pin
+  void _onAddMarkerpin() {
+    setState(() {
+      _markers.add(Marker(
+        // This marker id can be anything that uniquely identifies each marker.
+        markerId: const MarkerId("Your Pin Location"),
+        position: _pinPosition, //Position on mark @ChangNoi
+        infoWindow: const InfoWindow(
+          title: "Your Pin Location", //title message on mark @ChangNoi
+          snippet: 'message', //snippet message on mark @ChangNoi
+        ),
+        icon: BitmapDescriptor.defaultMarker,
+      ));
+    });
+  }
+
   void _AddMarkerCurrentLocation() async {
     setState(() {
       _markers.add(Marker(
         // This marker id can be anything that uniquely identifies each marker.
         markerId: const MarkerId("CurrentLocation"),
-        position: LatLng(currentLocationLatitude, currentLocationlongitude),
+        position: LatLng(currentLatitude, currentLongitude),
         // ignore: prefer_const_constructors
         infoWindow: InfoWindow(
           title: "Your current location", //title message on mark @ChangNoi
@@ -157,9 +174,9 @@ class _MyAppState extends State<SimpleMaps> {
   Future<void> syncLocation() async {
     getUserCurrentLocation().then((value) async {
       // ignore: avoid_print
-      debugPrint("${value.latitude} ${value.longitude}");
-      currentLocationLatitude = value.latitude;
-      currentLocationlongitude = value.longitude;
+      //debugPrint("${value.latitude} ${value.longitude}");
+      currentLatitude = value.latitude;
+      currentLongitude = value.longitude;
 
       // specified current users location
       // ignore: unnecessary_new
@@ -175,11 +192,11 @@ class _MyAppState extends State<SimpleMaps> {
   }
 
   Future<void> animateCameraCurrentLocation() async {
-    debugPrint("$currentLocationLatitude $currentLocationlongitude");
+    debugPrint("$currentLatitude $currentLongitude");
     // specified current users location
     // ignore: unnecessary_new
     CameraPosition cameraPosition = new CameraPosition(
-      target: LatLng(currentLocationLatitude, currentLocationlongitude),
+      target: LatLng(currentLatitude, currentLongitude),
       zoom: 16,
     );
 
@@ -191,10 +208,10 @@ class _MyAppState extends State<SimpleMaps> {
   void realTimeLocationTask() async {
     getUserCurrentLocation().then((value) async {
       // ignore: avoid_print
-      debugPrint("${value.latitude} ${value.longitude}");
+      //debugPrint("${value.latitude} ${value.longitude}");
       _AddMarkerCurrentLocation();
-      currentLocationLatitude = value.latitude;
-      currentLocationlongitude = value.longitude;
+      currentLatitude = value.latitude;
+      currentLongitude = value.longitude;
     });
   }
 
@@ -205,7 +222,7 @@ class _MyAppState extends State<SimpleMaps> {
 
     PolylineResult result = await polylinePoints.getRouteBetweenCoordinates(
       googleApikey,
-      PointLatLng(currentLocationLatitude, currentLocationlongitude),
+      PointLatLng(currentLatitude, currentLongitude),
       PointLatLng(_pinPosition.latitude, _pinPosition.longitude),
       travelMode: TravelMode.driving,
     );
@@ -268,12 +285,30 @@ class _MyAppState extends State<SimpleMaps> {
             padding: EdgeInsets.all(16.0),
             child: Align(
               alignment: Alignment.topLeft,
-              child: FloatingActionButton(
-                onPressed: _onMapTypeButtonPressed,
-                materialTapTargetSize: MaterialTapTargetSize.padded,
-                backgroundColor: Colors.amber,
-                child: Icon(Icons.map, size: 36.0),
-              ),
+              child: Column(children: <Widget>[
+                FloatingActionButton(
+                  onPressed: _onMapTypeButtonPressed,
+                  materialTapTargetSize: MaterialTapTargetSize.padded,
+                  backgroundColor: Colors.amber,
+                  child: Icon(Icons.map, size: 36.0),
+                ),
+                FloatingActionButton(
+                  onPressed: () {
+                    radiusMark = 0.0031;
+                  },
+                  materialTapTargetSize: MaterialTapTargetSize.padded,
+                  backgroundColor: Colors.black,
+                  child: Text("400 M"),
+                ),
+                FloatingActionButton(
+                  onPressed: () {
+                    radiusMark = 180;
+                  },
+                  materialTapTargetSize: MaterialTapTargetSize.padded,
+                  backgroundColor: Colors.black,
+                  child: Text("All"),
+                ),
+              ]),
             ),
           ),
           Padding(
@@ -302,7 +337,8 @@ class _MyAppState extends State<SimpleMaps> {
                   FloatingActionButton(
                     onPressed: () async {
                       _markers.clear();
-                      addMakerCarMoto(_markers, true);
+                      _onAddMarkerpin(); // to save current pin
+                      addMakerCarMoto(_markers, true, _pinPosition, radiusMark);
                     },
                     materialTapTargetSize: MaterialTapTargetSize.padded,
                     backgroundColor: Colors.blue,
@@ -313,7 +349,9 @@ class _MyAppState extends State<SimpleMaps> {
                   FloatingActionButton(
                     onPressed: () async {
                       _markers.clear();
-                      addMakerCarMoto(_markers, false);
+                      _onAddMarkerpin(); // to save current pin
+                      addMakerCarMoto(
+                          _markers, false, _pinPosition, radiusMark);
                     },
                     materialTapTargetSize: MaterialTapTargetSize.padded,
                     backgroundColor: Color.fromARGB(255, 18, 1, 0),
