@@ -28,13 +28,11 @@ Future<void> addMakerCarMoto(
     if (sqrt((pow((pinPosition.latitude - latitude), 2)) +
             pow((pinPosition.longitude - longitude), 2)) <
         radius) {
-      // in radius
-      seeMarker = true;
+      seeMarker = true; // in radius
     } else {
-      // non in radius
-      seeMarker = false;
+      seeMarker = false; /* non in radius*/ 
     }
-
+    
     //debugPrint("Marker add");
     setIn.add(Marker(
       // This marker id can be anything that uniquely identifies each marker.
