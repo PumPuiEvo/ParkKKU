@@ -1,13 +1,16 @@
 import 'dart:async';
+import 'dart:convert';
+import 'dart:math';
 
+import 'package:custom_info_window/custom_info_window.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_application_2/CustomizeMarkerICon.dart';
-import 'package:flutter_application_2/TestMaker.dart';
+import 'package:flutter/services.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:location/location.dart';
 import 'package:flutter_polyline_points/flutter_polyline_points.dart';
 
+import 'CustomizeMarkerICon.dart';
 import 'MarkerJSON.dart';
 
 class SimpleMaps extends StatefulWidget {
@@ -36,8 +39,23 @@ class _MyAppState extends State<SimpleMaps> {
   CustomizeMarkerICon currentLocationICon =
       CustomizeMarkerICon('assets/images/noiPic.png', 100);
 
+  PolylinePoints polylinePoints = PolylinePoints();
+  Map<PolylineId, Polyline> polylines = {}; // polylines to show direction
+
+  CustomInfoWindowController _customInfoWindowController =
+      CustomInfoWindowController();
+
   void _onMapCreated(GoogleMapController controller) {
     _controller.complete(controller);
+    //----------
+    _customInfoWindowController.googleMapController = controller;
+  }
+
+  //set camera
+  LatLng _lastMapPosition = _center;
+  void _onCameraMove(CameraPosition position) {
+    _lastMapPosition = position.target;
+    _customInfoWindowController.onCameraMove!();
   }
 
   MapType _currentMapType = MapType.hybrid;
@@ -46,6 +64,98 @@ class _MyAppState extends State<SimpleMaps> {
       _currentMapType =
           _currentMapType == MapType.normal ? MapType.hybrid : MapType.normal;
     });
+  }
+
+  Future<void> addMakerCarMoto(bool vehicle) async {
+    String path;
+    vehicle
+        ? path = 'assets/parkPlace/car.json'
+        : path = 'assets/parkPlace/motorcycle.json';
+
+    // Fetch content from the json file
+    final String response = await rootBundle.loadString(path);
+    final data = await json.decode(response);
+    List _parkList = data["placeParking"];
+    // debugPrint("jsonLoad");
+
+    var listSize = _parkList.length;
+    for (var i = 0; i < listSize; i++) {
+      double latitude = _parkList[i]["Latitude"] as double;
+      double longitude = _parkList[i]["Longitude"] as double;
+
+      // radius to add
+      if (sqrt((pow((_pinPosition.latitude - latitude), 2)) +
+              pow((_pinPosition.longitude - longitude), 2)) >
+          radiusMark) {
+        continue;
+      }
+      //debugPrint("Marker add");
+      _markers.add(Marker(
+        // This marker id can be anything that uniquely identifies each marker.
+        markerId: MarkerId(_parkList[i]["placeID"] as String),
+        position: LatLng(latitude, longitude),
+        onTap: () {
+          _customInfoWindowController.addInfoWindow!(
+              Stack(
+                alignment: Alignment.bottomCenter,
+                children: <Widget>[
+                  Card(
+                    margin: EdgeInsets.only(bottom: 20),
+                    child: SizedBox(
+                        width: 300,
+                        height: 100,
+                        child: Container(
+                          child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.stretch,
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                const Text("Name :",
+                                    style:
+                                        TextStyle(fontWeight: FontWeight.bold)),
+                                Text(_parkList[i]["placeID"]),
+                                const Text("Status :",
+                                    style:
+                                        TextStyle(fontWeight: FontWeight.bold)),
+                                const Text("<No data>")
+                              ]),
+                        )),
+                  ),
+                  Container(
+                      width: 100,
+                      height: 40,
+                      decoration: ShapeDecoration(
+                        shape: RoundedRectangleBorder(),
+                        color: Colors.transparent,
+                      ),
+                      child: Row(
+                        children: <Widget>[
+                          FloatingActionButton(
+                            onPressed: () async {
+                              _markers.clear();
+                              // set new pin
+                              _pinPosition = LatLng(latitude, longitude);
+                              _onAddMarkerpin();
+                            },
+                            backgroundColor: Colors.green,
+                            child: Icon(Icons.add_location, size: 36.0),
+                          ),
+                          FloatingActionButton(
+                            onPressed: () async {
+                              null;
+                            },
+                            child: Icon(Icons.gps_fixed, size: 40),
+                          ),
+                        ],
+                      ))
+                ],
+              ),
+              LatLng(latitude, longitude)); // args 2
+          setState(() {});
+        },
+        icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueOrange),
+        visible: true,
+      ));
+    }
   }
 
   //------------------------------currentLocation part
@@ -75,31 +185,6 @@ class _MyAppState extends State<SimpleMaps> {
         setState(() {});
       },
     );
-  }
-  //---------------------------------
-
-  Future<LocationData?> _currentLocation2() async {
-    bool serviceEnabled;
-    PermissionStatus permissionGranted;
-
-    Location location = new Location();
-
-    serviceEnabled = await location.serviceEnabled();
-    if (!serviceEnabled) {
-      serviceEnabled = await location.requestService();
-      if (!serviceEnabled) {
-        return null;
-      }
-    }
-
-    permissionGranted = await location.hasPermission();
-    if (permissionGranted == PermissionStatus.denied) {
-      permissionGranted = await location.requestPermission();
-      if (permissionGranted != PermissionStatus.granted) {
-        return null;
-      }
-    }
-    return await location.getLocation();
   }
 
   // set maker //pin
@@ -151,12 +236,6 @@ class _MyAppState extends State<SimpleMaps> {
         visible: gpsON, // if GPS ON it's viisble
       ));
     });
-  }
-
-  //set camera
-  LatLng _lastMapPosition = _center;
-  void _onCameraMove(CameraPosition position) {
-    _lastMapPosition = position.target;
   }
 
   // created method for getting user current location
@@ -215,8 +294,6 @@ class _MyAppState extends State<SimpleMaps> {
     });
   }
 
-  PolylinePoints polylinePoints = PolylinePoints();
-  Map<PolylineId, Polyline> polylines = {}; //polylines to show direction
   getDirections() async {
     List<LatLng> polylineCoordinates = [];
 
@@ -250,10 +327,10 @@ class _MyAppState extends State<SimpleMaps> {
     setState(() {});
   }
 
-  @override
-  void initState() {
-    super.initState();
-  }
+  // @override
+  // void initState() {
+  //   super.initState();
+  // }
 
   @override
   Widget build(BuildContext context) {
@@ -268,6 +345,9 @@ class _MyAppState extends State<SimpleMaps> {
       body: Stack(
         children: <Widget>[
           GoogleMap(
+            onTap: (position) {
+              _customInfoWindowController.hideInfoWindow!();
+            },
             onMapCreated: _onMapCreated,
             zoomGesturesEnabled: true, //zoom in out
             mapType: _currentMapType,
@@ -277,9 +357,16 @@ class _MyAppState extends State<SimpleMaps> {
               target: _center,
               zoom: 15.0,
             ),
-            myLocationEnabled: false, // current locate button
+            myLocationEnabled: true, // current locate button
             markers: _markers,
             polylines: Set<Polyline>.of(polylines.values), //polylines
+            myLocationButtonEnabled: false,
+          ),
+          CustomInfoWindow(
+            controller: _customInfoWindowController,
+            height: 200,
+            width: 150,
+            offset: 30,
           ),
           Padding(
             padding: EdgeInsets.all(16.0),
@@ -338,7 +425,7 @@ class _MyAppState extends State<SimpleMaps> {
                     onPressed: () async {
                       _markers.clear();
                       _onAddMarkerpin(); // to save current pin
-                      addMakerCarMoto(_markers, true, _pinPosition, radiusMark);
+                      addMakerCarMoto(true);
                     },
                     materialTapTargetSize: MaterialTapTargetSize.padded,
                     backgroundColor: Colors.blue,
@@ -350,8 +437,7 @@ class _MyAppState extends State<SimpleMaps> {
                     onPressed: () async {
                       _markers.clear();
                       _onAddMarkerpin(); // to save current pin
-                      addMakerCarMoto(
-                          _markers, false, _pinPosition, radiusMark);
+                      addMakerCarMoto(false);
                     },
                     materialTapTargetSize: MaterialTapTargetSize.padded,
                     backgroundColor: Color.fromARGB(255, 18, 1, 0),
@@ -373,6 +459,7 @@ class _MyAppState extends State<SimpleMaps> {
                   FloatingActionButton(
                     onPressed: () {
                       setState(() {
+                        //olylines.clear();
                         if (polylinesVisible == true) {
                           polylinesVisible = false;
                         } else {
@@ -391,5 +478,10 @@ class _MyAppState extends State<SimpleMaps> {
         ],
       ),
     ));
+  }
+
+  // getter method
+  static LatLng getCurrentDataLocation() {
+    return LatLng(currentLatitude, currentLongitude);
   }
 }

@@ -3,14 +3,17 @@ import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:flutter/material.dart';
 import 'dart:convert';
 import 'package:flutter/services.dart';
+import 'package:custom_info_window/custom_info_window.dart';
 
-Future<void> addMakerCarMoto(
-    Set setIn, bool vehicle, LatLng pinPosition, double radius) async {
+Future<void> addMakerCarMoto4(Set setIn, bool vehicle, LatLng pinPosition,
+    double radius) async {
   String path;
   vehicle
       ? path = 'assets/parkPlace/car.json'
       : path = 'assets/parkPlace/motorcycle.json';
   List _parkList = [];
+  CustomInfoWindowController _customInfoWindowController =
+      CustomInfoWindowController();
 
   // Fetch content from the json file
   final String response = await rootBundle.loadString(path);
@@ -30,20 +33,23 @@ Future<void> addMakerCarMoto(
         radius) {
       seeMarker = true; // in radius
     } else {
-      seeMarker = false; /* non in radius*/ 
+      seeMarker = false; /* non in radius*/
     }
-    
+
     //debugPrint("Marker add");
     setIn.add(Marker(
       // This marker id can be anything that uniquely identifies each marker.
       markerId: MarkerId(_parkList[i]["placeID"] as String),
       position: LatLng(latitude, longitude),
+
       // ignore: prefer_const_constructors
       infoWindow: InfoWindow(
         title: _parkList[i]["placeID"], //title message on mark @ChangNoi
         snippet:
             "This marker park of ${_parkList[i]["placeID"]}", //snippet message on mark @ChangNoi
       ),
+      onTap: () {
+      },
       icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueOrange),
       visible: seeMarker,
     ));
