@@ -11,7 +11,6 @@ import 'package:location/location.dart';
 import 'package:flutter_polyline_points/flutter_polyline_points.dart';
 
 import 'CustomizeMarkerICon.dart';
-import 'MarkerJSON.dart';
 
 class SimpleMaps extends StatefulWidget {
   const SimpleMaps({super.key});
@@ -21,8 +20,6 @@ class SimpleMaps extends StatefulWidget {
 }
 
 class _MyAppState extends State<SimpleMaps> {
-  String googleApikey =
-      "AIzaSyCMBfP4py6zjtDQEUby3HeXWl4jpfv5wTM"; // use in android.xml
   Completer<GoogleMapController> _controller = Completer();
   static bool gpsON = false;
   Set<Marker> _markers = {};
@@ -34,7 +31,6 @@ class _MyAppState extends State<SimpleMaps> {
 
   static LatLng _center = LatLng(16.472955, 102.823042);
   LatLng _pinPosition = _center;
-  static bool polylinesVisible = false;
 
   CustomizeMarkerICon currentLocationICon =
       CustomizeMarkerICon('assets/images/noiPic.png', 100);
@@ -294,47 +290,8 @@ class _MyAppState extends State<SimpleMaps> {
     });
   }
 
-  getDirections() async {
-    List<LatLng> polylineCoordinates = [];
-
-    PolylineResult result = await polylinePoints.getRouteBetweenCoordinates(
-      googleApikey,
-      PointLatLng(currentLatitude, currentLongitude),
-      PointLatLng(_pinPosition.latitude, _pinPosition.longitude),
-      travelMode: TravelMode.driving,
-    );
-
-    if (result.points.isNotEmpty) {
-      result.points.forEach((PointLatLng point) {
-        polylineCoordinates.add(LatLng(point.latitude, point.longitude));
-      });
-    } else {
-      print(result.errorMessage);
-    }
-    addPolyLine(polylineCoordinates);
-  }
-
-  addPolyLine(List<LatLng> polylineCoordinates) {
-    PolylineId id = PolylineId("poly");
-    Polyline polyline = Polyline(
-      polylineId: id,
-      color: Colors.deepPurpleAccent,
-      points: polylineCoordinates,
-      width: 8,
-      visible: polylinesVisible,
-    );
-    polylines[id] = polyline;
-    setState(() {});
-  }
-
-  // @override
-  // void initState() {
-  //   super.initState();
-  // }
-
   @override
   Widget build(BuildContext context) {
-    getDirections(); //fetch direction polylines from Google API
     realTimeLocationTask();
     return MaterialApp(
         home: Scaffold(
@@ -458,14 +415,7 @@ class _MyAppState extends State<SimpleMaps> {
                   // ignore: prefer_const_constructors
                   FloatingActionButton(
                     onPressed: () {
-                      setState(() {
-                        //olylines.clear();
-                        if (polylinesVisible == true) {
-                          polylinesVisible = false;
-                        } else {
-                          polylinesVisible = true;
-                        }
-                      });
+                      setState(() {});
                     },
                     materialTapTargetSize: MaterialTapTargetSize.padded,
                     backgroundColor: Color.fromARGB(255, 0, 0, 0),
