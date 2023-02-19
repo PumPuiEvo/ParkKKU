@@ -1,0 +1,26 @@
+{
+    "destination_addresses": [
+        "FRG6+GX6, Sila, Mueang Khon Kaen District, Khon Kaen 40000, Thailand"
+    ],
+    "origin_addresses": [
+        "72 Soi Mu Ban Suan Mo, Tambon Sila, Amphoe Mueang Khon Kaen, Chang Wat Khon Kaen 40000, Thailand"
+    ],
+    "rows": [
+        {
+            "elements": [
+                {
+                    "distance": {
+                        "text": "1.2 km",
+                        "value": 1213
+                    },
+                    "duration": {
+                        "text": "3 mins",
+                        "value": 204
+                    },
+                    "status": "OK"
+                }
+            ]
+        }
+    ],
+    "status": "OK"
+}

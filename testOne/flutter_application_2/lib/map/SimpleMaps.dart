@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'dart:math';
 
 import 'package:custom_info_window/custom_info_window.dart';
+import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
@@ -11,6 +12,7 @@ import 'package:location/location.dart';
 import 'package:flutter_polyline_points/flutter_polyline_points.dart';
 
 import 'CustomizeMarkerICon.dart';
+import 'FindDistan.dart';
 
 class SimpleMaps extends StatefulWidget {
   const SimpleMaps({super.key});
@@ -20,6 +22,8 @@ class SimpleMaps extends StatefulWidget {
 }
 
 class _MyAppState extends State<SimpleMaps> {
+  String googleApikey =
+      "AIzaSyCMBfP4py6zjtDQEUby3HeXWl4jpfv5wTM"; // use in android.xml
   Completer<GoogleMapController> _controller = Completer();
   static bool gpsON = false;
   Set<Marker> _markers = {};
@@ -31,6 +35,7 @@ class _MyAppState extends State<SimpleMaps> {
 
   static LatLng _center = LatLng(16.472955, 102.823042);
   LatLng _pinPosition = _center;
+  static bool polylinesVisible = false;
 
   CustomizeMarkerICon currentLocationICon =
       CustomizeMarkerICon('assets/images/noiPic.png', 100);
@@ -135,12 +140,12 @@ class _MyAppState extends State<SimpleMaps> {
                             backgroundColor: Colors.green,
                             child: Icon(Icons.add_location, size: 36.0),
                           ),
-                          FloatingActionButton(
-                            onPressed: () async {
-                              null;
-                            },
-                            child: Icon(Icons.gps_fixed, size: 40),
-                          ),
+                          // FloatingActionButton(
+                          //   onPressed: () async {
+                          //     null;
+                          //   },
+                          //   child: Icon(Icons.gps_fixed, size: 40),
+                          // ),
                         ],
                       ))
                 ],
@@ -290,6 +295,43 @@ class _MyAppState extends State<SimpleMaps> {
     });
   }
 
+  getDirections() async {
+    List<LatLng> polylineCoordinates = [];
+
+    PolylineResult result = await polylinePoints.getRouteBetweenCoordinates(
+      googleApikey,
+      PointLatLng(currentLatitude, currentLongitude),
+      PointLatLng(_pinPosition.latitude, _pinPosition.longitude),
+      travelMode: TravelMode.driving,
+    );
+
+    if (result.points.isNotEmpty) {
+      result.points.forEach((PointLatLng point) {
+        polylineCoordinates.add(LatLng(point.latitude, point.longitude));
+      });
+    } else {
+      print(result.errorMessage);
+    }
+    addPolyLine(polylineCoordinates);
+  }
+
+  addPolyLine(List<LatLng> polylineCoordinates) {
+    PolylineId id = PolylineId("poly");
+    Polyline polyline = Polyline(
+      polylineId: id,
+      color: Colors.deepPurpleAccent,
+      points: polylineCoordinates,
+      width: 8,
+      visible: polylinesVisible,
+    );
+    polylines[id] = polyline;
+    setState(() {});
+  }
+  // @override
+  // void initState() {
+  //   super.initState();
+  // }
+
   @override
   Widget build(BuildContext context) {
     realTimeLocationTask();
@@ -415,12 +457,21 @@ class _MyAppState extends State<SimpleMaps> {
                   // ignore: prefer_const_constructors
                   FloatingActionButton(
                     onPressed: () {
-                      setState(() {});
+                      setState(() {
+                        getDirections();
+                        if (polylinesVisible == true) {
+                          polylinesVisible = false;
+                        } else {
+                          polylinesVisible = true;
+                        }
+                      });
+                      getDistanceMatrix(_pinPosition,
+                          LatLng(currentLatitude, currentLongitude));
                     },
                     materialTapTargetSize: MaterialTapTargetSize.padded,
                     backgroundColor: Color.fromARGB(255, 0, 0, 0),
                     child: Text("Go"),
-                  )
+                  ),
                 ],
               ),
             ),
