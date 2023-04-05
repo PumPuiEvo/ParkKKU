@@ -24,7 +24,7 @@ class SimpleMaps extends StatefulWidget {
 class _MyAppState extends State<SimpleMaps> {
   String googleApikey =
       "AIzaSyCMBfP4py6zjtDQEUby3HeXWl4jpfv5wTM"; // use in android.xml
-  Completer<GoogleMapController> _controller = Completer();
+  final Completer<GoogleMapController> _controller = Completer();
   static bool gpsON = false;
   Set<Marker> _markers = {};
   Set<Polygon> _polygon = {};

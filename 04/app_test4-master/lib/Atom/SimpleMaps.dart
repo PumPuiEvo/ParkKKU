@@ -17,6 +17,8 @@ import 'package:app01/Atom/Marker.dart';
 import 'package:flutter_polyline_points/flutter_polyline_points.dart';
 import 'package:custom_info_window/custom_info_window.dart';
 
+import '../openMapApp/MapUtils.dart';
+
 class SimpleMaps extends StatefulWidget {
   const SimpleMaps({super.key});
 
@@ -162,7 +164,7 @@ class _MyAppState extends State<SimpleMaps> {
                           ),
                           FloatingActionButton(
                             onPressed: () async {
-                              null;
+                              MapUtils.openMapOutApp(latitude, longitude);
                             },
                             child: Icon(Icons.gps_fixed, size: 40),
                           ),
@@ -345,24 +347,19 @@ class _MyAppState extends State<SimpleMaps> {
     docRef.get().then(
       (DocumentSnapshot doc) {
         final data = doc.data() as Map<String, dynamic>;
-        // print("Check dataaaaaaaaaaaaaaaaaaaaaaa");
-        // print(data);
         placeMoto = data;
-        // print("Check dataaaaaaaaaaaaaaaaaaaaaaa");
       },
       onError: (e) => print("Error getting document: $e"),
     );
   }
+
   // CacheRamUserV-1.0.0
   void getCarMain() {
     final docRef = GetDataMarker.getDatabaseCar4();
     docRef.get().then(
       (DocumentSnapshot doc) {
         final data = doc.data() as Map<String, dynamic>;
-        // print("Check dataaaaaaaaaaaaaaaaaaaaaaa");
-        // print(data);
         placeCar = data;
-        // print("Check dataaaaaaaaaaaaaaaaaaaaaaa");
       },
       onError: (e) => print("Error getting document: $e"),
     );
@@ -375,7 +372,6 @@ class _MyAppState extends State<SimpleMaps> {
     getMotoMain();
     // CacheRamUserV-1.0.0
     getCarMain();
-    
   }
 
   @override

@@ -41,6 +41,7 @@ dependencies:
   location: ^4.4.0
   flutter_svg: ^1.1.0
   custom_info_window: ^1.0.1
+  url_launcher: ^6.1.10
   #background_fetch: ^1.1.4
   #flutter_google_places: ^0.3.0
   #flutter_google_places_hoc081098: ^1.0.0
@@ -76,6 +77,8 @@ flutter:
   # To add assets to your application, add an assets section, like this:
   assets:
     - assets/images/noiPic.png
+    - assets/images/sideBar.png
+    - assets/images/ParkKKUFB.png
     - assets/parkPlace/car.json
     - assets/parkPlace/motorcycle.json
   #   - images/a_dot_ham.jpeg

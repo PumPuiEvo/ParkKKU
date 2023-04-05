@@ -53,6 +53,7 @@ dependencies:
   flutter_svg: ^1.1.0
   flutter_expandable_fab: ^1.7.0
   custom_info_window: ^1.0.1
+  url_launcher: ^6.1.10
 
 dev_dependencies:
   flutter_test:
