@@ -9,6 +9,7 @@ import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:provider/provider.dart';
 
 import '../Atom/ProData.dart';
+import '../aFeedback/MapUtils.dart';
 
 class Searching extends StatefulWidget {
   const Searching({super.key});
@@ -237,7 +238,7 @@ class MySearchDelegate extends SearchDelegate<String> {
               zoom: 16,
             );
             // print("camerafinish");
-            // close(context, '');
+            close(context, '');
 
             // try {
             //   GoogleMapController controllerTem =
@@ -270,13 +271,17 @@ class MySearchDelegate extends SearchDelegate<String> {
             // Provider.of<ProData>(context).test(places[index]["Latitude"], places[index]["Longitude"]);
             // Provider.of<ProData>(context).clear();
 
-            SimpleMaps().testAnimateH(/*places[index]["Latitude"], places[index]["Longitude"]*/);
+            
+            // SimpleMaps().testAnimateH(/*places[index]["Latitude"], places[index]["Longitude"]*/);
+
+
             //SimpleMaps().openDrawerCus();
 
             // final markerProv = Provider.of<ProData>(context);
             // print(markerProv.getMarker());
-            print("-------------Prov+++");
-            //print(markerProv);
+            // print("-------------Prov+++");
+            // print(markerProv);
+            MapUtils.openMapOutApp(places[index]["Latitude"], places[index]["Longitude"]);
           },
         );
       },

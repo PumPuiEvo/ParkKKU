@@ -196,12 +196,12 @@ class _MyAppState extends State<SimpleMaps> {
     late BitmapDescriptor iconOfVehicle;
     if (vehicle) {
       iconOfVehicle = await BitmapDescriptor.fromAssetImage(
-          ImageConfiguration(size: Size(1, 1)), "assets/images/carPinRed2.png");
+          ImageConfiguration(size: Size(1, 1)), "assets/images/carPinGray.png");
       place = placeCar;
     } else {
       iconOfVehicle = await BitmapDescriptor.fromAssetImage(
           ImageConfiguration(size: Size(1, 1)),
-          "assets/images/motoPinGreen2.png");
+          "assets/images/motoPinGray.png");
       place = placeMoto;
     }
     //print(place);
@@ -220,6 +220,45 @@ class _MyAppState extends State<SimpleMaps> {
       if (measure(_pinMark.latitude, _pinMark.longitude, latitude, longitude) >
           radiusMark) {
         continue;
+      }
+
+      double status = double.parse(_parkList[i]["status"].toString());
+      if (vehicle) {
+        if (status < 0) {
+          iconOfVehicle = await BitmapDescriptor.fromAssetImage(
+              ImageConfiguration(size: Size(1, 1)),
+              "assets/images/carPinGray.png");
+        } else if (status < 50) {
+          iconOfVehicle = await BitmapDescriptor.fromAssetImage(
+              ImageConfiguration(size: Size(1, 1)),
+              "assets/images/carPinGreen.png");
+        } else if (status < 80) {
+          iconOfVehicle = await BitmapDescriptor.fromAssetImage(
+              ImageConfiguration(size: Size(1, 1)),
+              "assets/images/carPinYellow.png");
+        } else if (status < 101) {
+          iconOfVehicle = await BitmapDescriptor.fromAssetImage(
+              ImageConfiguration(size: Size(1, 1)),
+              "assets/images/carPinRed.png");
+        }
+      } else {
+        if (status < 0) {
+          iconOfVehicle = await BitmapDescriptor.fromAssetImage(
+              ImageConfiguration(size: Size(1, 1)),
+              "assets/images/motoPinGray.png");
+        } else if (status < 50) {
+          iconOfVehicle = await BitmapDescriptor.fromAssetImage(
+              ImageConfiguration(size: Size(1, 1)),
+              "assets/images/motoPinGreen.png");
+        } else if (status < 80) {
+          iconOfVehicle = await BitmapDescriptor.fromAssetImage(
+              ImageConfiguration(size: Size(1, 1)),
+              "assets/images/motoPinYellow.png");
+        } else if (status < 101) {
+          iconOfVehicle = await BitmapDescriptor.fromAssetImage(
+              ImageConfiguration(size: Size(1, 1)),
+              "assets/images/motoPinRed.png");
+        }
       }
       // measure(_pinMark.latitude, _pinMark.longitude, latitude, longitude);
       //debugPrint("Marker add");
@@ -262,26 +301,30 @@ class _MyAppState extends State<SimpleMaps> {
                                 ]),
                           )),
                     ),
-                    Container(
-                        // padding: EdgeInsets.only(top: 0),
-                        width: 100,
-                        height: 40,
-                        alignment: Alignment.topRight,
-                        decoration: ShapeDecoration(
-                          shape: RoundedRectangleBorder(),
-                          color: Colors.transparent,
-                        ),
-                        child: Row(
-                          children: <Widget>[
-                            FloatingActionButton(
-                              onPressed: () async {
-                                MapUtils.openMapOutApp(latitude, longitude);
-                              },
-                              backgroundColor: Colors.blueAccent.shade700,
-                              child: Icon(Icons.arrow_circle_right, size: 36.0),
-                            ),
-                          ],
-                        ))
+                    Align(
+                      alignment: Alignment.topRight,
+                      widthFactor: 200,
+                      child: Container(
+                          padding: EdgeInsets.fromLTRB(40, 5, 0, 0),
+                          width: 100,
+                          height: 40,
+                          alignment: Alignment.topRight,
+                          decoration: ShapeDecoration(
+                            shape: RoundedRectangleBorder(),
+                            color: Colors.transparent,
+                          ),
+                          child: Row(
+                            children: <Widget>[
+                              FloatingActionButton(
+                                onPressed: () async {
+                                  MapUtils.openMapOutApp(latitude, longitude);
+                                },
+                                backgroundColor: Colors.blueAccent.shade700,
+                                child: Icon(Icons.arrow_circle_right, size: 36.0),
+                              ),
+                            ],
+                          )),
+                    )
                   ],
                 ),
                 LatLng(latitude, longitude)); // args 2
@@ -568,7 +611,7 @@ class _MyAppState extends State<SimpleMaps> {
               ),
               CustomInfoWindow(
                 controller: _customInfoWindowController,
-                height: 200,
+                height: 150,
                 width: 150,
                 offset: 30,
               ),
@@ -771,6 +814,8 @@ class _MyAppState extends State<SimpleMaps> {
                               _markers.clear();
                               markerProv.clear();
                             });
+                            _customInfoWindowController.hideInfoWindow!();
+                            polylines.clear();
                             _onAddMarkerpinDe();
                           },
 

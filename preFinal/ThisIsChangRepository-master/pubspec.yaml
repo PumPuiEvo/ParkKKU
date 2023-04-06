@@ -102,11 +102,18 @@ flutter:
     - assets/images/pinpoint.png
     - assets/images/moto.png
     - assets/images/car.png
-    - assets/images/carPinGreen.png
-    - assets/images/carPinRed2.png
-    - assets/images/motoPinGreen2.png
     - assets/images/sideBar.png
     - assets/images/ParkKKUFB.png
+
+    - assets/images/carPinGreen.png
+    - assets/images/carPinRed.png
+    - assets/images/carPinGray.png
+    - assets/images/carPinYellow.png
+    
+    - assets/images/motoPinGreen.png
+    - assets/images/motoPinRed.png
+    - assets/images/motoPinGray.png
+    - assets/images/motoPinYellow.png
 
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/assets-and-images/#resolution-aware
