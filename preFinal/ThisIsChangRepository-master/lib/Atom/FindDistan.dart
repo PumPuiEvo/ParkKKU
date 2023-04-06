@@ -17,7 +17,7 @@ Future<String> getDistanceMatrix(LatLng origins, LatLng destinations) async {
     print(distan[0]["elements"][0]["duration"]["text"]);//
     print(distan[0]["elements"][0]["duration"]["value"]);
 
-    return "distance : " + distan[0]["elements"][0]["distance"]["text"] + " duration : " + distan[0]["elements"][0]["duration"]["text"];
+    return "distance : " + distan[0]["elements"][0]["distance"]["text"] + "\nduration : " + distan[0]["elements"][0]["duration"]["text"];
   } catch (e) {
     print(e);
     return "error to find distand";

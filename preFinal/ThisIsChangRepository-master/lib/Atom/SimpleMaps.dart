@@ -104,7 +104,6 @@ class _MyAppState extends State<SimpleMaps> {
   static double currentLocationLatitude = 16.472955;
   static double currentLocationlongitude = 102.823042;
   static double radiusMark = 500;
-  static bool polylinesVisible = false;
   static late Uint8List userProfile;
   static LatLng _center = LatLng(16.472955, 102.823042);
   bool motoIconPress = false;
@@ -113,12 +112,15 @@ class _MyAppState extends State<SimpleMaps> {
   late Map<String, dynamic> placeMoto; //moto // CacheRamUserV-1.0.0
   late Map<String, dynamic> placeMap; //moto // CacheRamUserV-1.0.0
 
+  Set<Polygon> _polygon = {};
+  static bool polylinesVisible = false;
+  PolylinePoints polylinePoints = PolylinePoints();
+  Map<PolylineId, Polyline> polylines = {}; // polylines to show direction
+
   LatLng _pinPosition = _center;
   LatLng _pinMark = _center;
-  PolylinePoints polylinePoints = PolylinePoints();
   static CustomizeMarkerICon currentLocationICon =
       CustomizeMarkerICon('assets/images/noiPic.png', 150);
-  Map<PolylineId, Polyline> polylines = {}; // polylines to show direction
   CustomInfoWindowController _customInfoWindowController =
       CustomInfoWindowController();
   static void getProFileImage() async {
@@ -154,6 +156,39 @@ class _MyAppState extends State<SimpleMaps> {
       _currentMapType =
           _currentMapType == MapType.normal ? MapType.hybrid : MapType.normal;
     });
+  }
+
+  getDirections(LatLng start, LatLng stop) async {
+    List<LatLng> polylineCoordinates = [];
+
+    PolylineResult result = await polylinePoints.getRouteBetweenCoordinates(
+      googleApikey,
+      PointLatLng(start.latitude, start.longitude),
+      PointLatLng(stop.latitude, stop.longitude),
+      travelMode: TravelMode.driving,
+    );
+
+    if (result.points.isNotEmpty) {
+      result.points.forEach((PointLatLng point) {
+        polylineCoordinates.add(LatLng(point.latitude, point.longitude));
+      });
+    } else {
+      print(result.errorMessage);
+    }
+    addPolyLine(polylineCoordinates);
+  }
+
+  addPolyLine(List<LatLng> polylineCoordinates) {
+    PolylineId id = PolylineId("poly");
+    Polyline polyline = Polyline(
+      polylineId: id,
+      color: Colors.deepPurpleAccent,
+      points: polylineCoordinates,
+      width: 6,
+      visible: polylinesVisible,
+    );
+    polylines[id] = polyline;
+    setState(() {});
   }
 
   Future<void> addMakerCarMoto(bool vehicle) async {
@@ -195,55 +230,61 @@ class _MyAppState extends State<SimpleMaps> {
         //infoWindow: InfoWindow(title: "test", snippet: "testt"),
         onTap: () async {
           setState(() async {
-          _customInfoWindowController.addInfoWindow!(
-              Stack(
-                alignment: Alignment.bottomCenter,
-                children: <Widget>[
-                  Card(
-                    margin: EdgeInsets.only(bottom: 20),
-                    child: SizedBox(
-                        width: 300,
-                        height: 100,
-                        child: Container(
-                          child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.stretch,
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                const Text("Name :",
-                                    style:
-                                        TextStyle(fontWeight: FontWeight.bold)),
-                                Text(_parkList[i]["placeID"]),
-                                const Text("Distan & Duration",
-                                    style:
-                                        TextStyle(fontWeight: FontWeight.bold)),
-                                Text(await getDistanceMatrix(
-                                        _pinMark, LatLng(latitude, longitude))),
-                              ]),
-                        )),
-                  ),
-                  Container(
-                      // padding: EdgeInsets.only(top: 0),
-                      width: 100,
-                      height: 40,
-                      alignment: Alignment.topRight,
-                      decoration: ShapeDecoration(
-                        shape: RoundedRectangleBorder(),
-                        color: Colors.transparent,
-                      ),
-                      child: Row(
-                        children: <Widget>[
-                          FloatingActionButton(
-                            onPressed: () async {
-                              MapUtils.openMapOutApp(latitude, longitude);
-                            },
-                            backgroundColor: Colors.blueAccent.shade700,
-                            child: Icon(Icons.arrow_circle_right, size: 36.0),
-                          ),
-                        ],
-                      ))
-                ],
-              ),
-              LatLng(latitude, longitude)); // args 2
+            getDirections(
+                LatLng(currentLocationLatitude, currentLocationlongitude),
+                LatLng(latitude, longitude));
+            polylinesVisible = true;
+            _customInfoWindowController.addInfoWindow!(
+                Stack(
+                  alignment: Alignment.bottomCenter,
+                  children: <Widget>[
+                    Card(
+                      margin: EdgeInsets.only(bottom: 20),
+                      child: SizedBox(
+                          width: 300,
+                          height: 100,
+                          child: Container(
+                            child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.stretch,
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  const Text("Name :",
+                                      style: TextStyle(
+                                          fontWeight: FontWeight.bold)),
+                                  Text(_parkList[i]["placeID"]),
+                                  const Text("Distan & Duration",
+                                      style: TextStyle(
+                                          fontWeight: FontWeight.bold)),
+                                  Text(await getDistanceMatrix(
+                                      LatLng(currentLocationLatitude,
+                                          currentLocationlongitude),
+                                      LatLng(latitude, longitude))),
+                                ]),
+                          )),
+                    ),
+                    Container(
+                        // padding: EdgeInsets.only(top: 0),
+                        width: 100,
+                        height: 40,
+                        alignment: Alignment.topRight,
+                        decoration: ShapeDecoration(
+                          shape: RoundedRectangleBorder(),
+                          color: Colors.transparent,
+                        ),
+                        child: Row(
+                          children: <Widget>[
+                            FloatingActionButton(
+                              onPressed: () async {
+                                MapUtils.openMapOutApp(latitude, longitude);
+                              },
+                              backgroundColor: Colors.blueAccent.shade700,
+                              child: Icon(Icons.arrow_circle_right, size: 36.0),
+                            ),
+                          ],
+                        ))
+                  ],
+                ),
+                LatLng(latitude, longitude)); // args 2
           });
         },
         icon: iconOfVehicle,
@@ -478,7 +519,7 @@ class _MyAppState extends State<SimpleMaps> {
   void realTimeLocationTask() async {
     getUserCurrentLocation().then((value) async {
       // ignore: avoid_print
-      debugPrint("${value.latitude} ${value.longitude}");
+      // debugPrint("${value.latitude} ${value.longitude}");
       getProFileImage();
       _AddMarkerCurrentLocation();
       currentLocationLatitude = value.latitude;
@@ -489,7 +530,7 @@ class _MyAppState extends State<SimpleMaps> {
   static GlobalKey<ScaffoldState> ggMapK = GlobalKey<ScaffoldState>();
   @override
   Widget build(BuildContext context) {
-    // realTimeLocationTask();
+    realTimeLocationTask();
     final markerProv = Provider.of<ProData>(context);
     markerProv.addAllMaker(_markers);
     return MaterialApp(
@@ -505,6 +546,8 @@ class _MyAppState extends State<SimpleMaps> {
                 onTap: (position) {
                   _customInfoWindowController.hideInfoWindow!();
                   isDialOpen.value = false;
+                  polylinesVisible = false;
+                  polylines.clear();
                   setState(() {});
                 },
                 key: ggMapK,
@@ -520,6 +563,7 @@ class _MyAppState extends State<SimpleMaps> {
                 ),
                 myLocationEnabled: true, // current locate button
                 markers: markerProv.getMarker(),
+                polylines: Set<Polyline>.of(polylines.values),
                 mapToolbarEnabled: false,
               ),
               CustomInfoWindow(
@@ -593,7 +637,12 @@ class _MyAppState extends State<SimpleMaps> {
                           SpeedDialChild(
                             child: FloatingActionButton.extended(
                               onPressed: () {
-                                radiusMark = 500;
+                                setState(() {
+                                  radiusMark = 500;
+                                  _markers.clear();
+                                  markerProv.clear();
+                                  _customInfoWindowController.hideInfoWindow!();
+                                });
                               },
                               materialTapTargetSize:
                                   MaterialTapTargetSize.padded,
@@ -604,7 +653,12 @@ class _MyAppState extends State<SimpleMaps> {
                           SpeedDialChild(
                             child: FloatingActionButton.extended(
                               onPressed: () {
-                                radiusMark = 1000;
+                                setState(() {
+                                  radiusMark = 1000;
+                                  _markers.clear();
+                                  markerProv.clear();
+                                  _customInfoWindowController.hideInfoWindow!();
+                                });
                               },
                               materialTapTargetSize:
                                   MaterialTapTargetSize.padded,
@@ -615,7 +669,12 @@ class _MyAppState extends State<SimpleMaps> {
                           SpeedDialChild(
                             child: FloatingActionButton.extended(
                               onPressed: () {
-                                radiusMark = 7000 * 1000;
+                                setState(() {
+                                  radiusMark = 7000 * 1000;
+                                  _markers.clear();
+                                  markerProv.clear();
+                                  _customInfoWindowController.hideInfoWindow!();
+                                });
                               },
                               materialTapTargetSize:
                                   MaterialTapTargetSize.padded,
@@ -780,9 +839,12 @@ class _MyAppState extends State<SimpleMaps> {
                           SpeedDialChild(
                             child: FloatingActionButton(
                               onPressed: () async {
-                                gpsON = false;
-                                _markers.clear();
-                                markerProv.clear();
+                                setState(() {
+                                  gpsON = false;
+                                  _markers.clear();
+                                  markerProv.clear();
+                                  _customInfoWindowController.hideInfoWindow!();
+                                });
                               },
                               materialTapTargetSize:
                                   MaterialTapTargetSize.padded,
